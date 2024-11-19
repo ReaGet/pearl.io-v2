@@ -3,43 +3,35 @@ import { Route } from '@prisma/client'
 
 export async function getRouteConfig(url: string) {
   try {
-    // Находим проект по URL
-    const project = await prisma.project.findFirst({
-      where: {
-        url: new URL(url).origin
-      }
-    })
+    // Нормализация URL
+    const urlObject = new URL(url)
+    const pathname = urlObject.pathname
+    const normalizedPathname = pathname.endsWith('/') ? pathname : `${pathname}/`
+    const normalizedUrl = `${urlObject.origin}${normalizedPathname}`
 
-    if (!project) return null
-
-    // Находим все маршруты проекта
     const routes = await prisma.route.findMany({
-      where: {
-        projectId: project.id
+      include: {
+        project: true,
+      },
+    })
+
+    for (const route of routes) {
+      const pattern = new RegExp(route.path)
+      // Проверяем соответствие с нормализованным URL
+      if (pattern.test(normalizedUrl)) {
+        return {
+          projectId: route.projectId,
+          routeId: route.id,
+          returnType: route.returnType,
+          // staticImagePath: route.staticImagePath,
+          cacheDuration: route.cacheDuration,
+        }
       }
-    })
-
-    // Находим подходящий маршрут
-    const pathname = new URL(url).pathname
-    const matchingRoute = routes.find((route: Route) => {
-      const routePattern = new RegExp(
-        '^' + route.path.replace(/:[^\s/]+/g, '([^/]+)') + '$'
-      )
-      return routePattern.test(pathname)
-    })
-
-    if (!matchingRoute) return null
-
-    return {
-      projectId: project.id,
-      routeId: matchingRoute.id,
-      returnType: matchingRoute.returnType,
-      cacheDuration: matchingRoute.cacheDuration,
-      staticImagePath: matchingRoute.returnType === 'static' ? 
-        `/static/${project.id}/${matchingRoute.id}.jpg` : undefined
     }
+
+    return null
   } catch (error) {
-    console.error('Error getting route config:', error)
+    console.error('Error in getRouteConfig:', error)
     return null
   }
 } 

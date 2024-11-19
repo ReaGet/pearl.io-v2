@@ -15,7 +15,7 @@ import { deleteRoute } from "@/lib/api"
 import { EditRouteModal } from "./EditRouteModal"
 
 type TableMeta = {
-  reloadData: () => void
+  reloadData: () => Promise<void>
 }
 
 export const columns: ColumnDef<Route, TableMeta>[] = [

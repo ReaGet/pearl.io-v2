@@ -5,7 +5,8 @@ export default async function ProjectPage({
 }: { 
   params: { projectId: string } 
 }) {
-  const data = await getProjectDetails(params.projectId)
+  const { projectId } = await params
+  const data = await getProjectDetails(projectId)
   
   if (!data) {
     return <div>Проект не найден</div>

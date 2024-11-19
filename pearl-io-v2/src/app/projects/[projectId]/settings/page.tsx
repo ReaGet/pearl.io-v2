@@ -7,10 +7,11 @@ export default async function SettingsPage({
 }: { 
   params: { projectId: string } 
 }) {
-  const routes = (await getProjectRoutes(params.projectId)).map(route => ({
+  const { projectId } = await params
+  const routes = (await getProjectRoutes(projectId)).map(route => ({
     ...route,
     createdAt: route.createdAt.toISOString()
   }))
   
-  return <ProjectSettings projectId={params.projectId} initialRoutes={routes as unknown as Route[]} />
+  return <ProjectSettings projectId={projectId} initialRoutes={routes as unknown as Route[]} />
 } 

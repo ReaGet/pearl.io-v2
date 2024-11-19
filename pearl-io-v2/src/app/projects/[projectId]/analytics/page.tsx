@@ -6,7 +6,8 @@ export default async function AnalyticsPage({
 }: { 
   params: { projectId: string } 
 }) {
-  const data = await getProjectAnalytics(params.projectId)
+  const { projectId } = await params
+  const data = await getProjectAnalytics(projectId)
   
   return <ProjectAnalyticsView initialData={data} />
 } 
