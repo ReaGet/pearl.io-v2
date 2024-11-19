@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { Route } from '@prisma/client'
+import { cacheImage } from './cache'
 
 export async function getProjectDetails(projectId: string) {
   const project = await prisma.project.findUnique({
@@ -105,4 +106,26 @@ export async function getProjectRoutes(projectId: string): Promise<Route[]> {
       createdAt: 'desc'
     }
   })
+}
+
+export async function deleteCachedImage(imageId: string) {
+  try {
+    const cachedImage = await prisma.cachedImage.findUnique({
+      where: { id: imageId }
+    })
+
+    if (!cachedImage) {
+      return { success: false, error: 'Cached image not found' }
+    }
+
+    // Удаляем запись из БД
+    await prisma.cachedImage.delete({
+      where: { id: imageId }
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting cached image:', error)
+    return { success: false, error: 'Failed to delete cached image' }
+  }
 } 

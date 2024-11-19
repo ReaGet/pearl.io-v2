@@ -1,8 +1,21 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Download } from "lucide-react"
+import { Trash2 } from "lucide-react"
+import { deleteCachedImage } from "@/lib/actions"
+import { useToast } from "@/hooks/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 export type Image = {
   id: string
@@ -36,18 +49,83 @@ export const columns: ColumnDef<Image>[] = [
     },
   },
   {
-    id: "actions",
+    id: "preview",
+    header: "Предпросмотр",
     cell: ({ row }) => {
       return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.open(row.original.imageUrl, '_blank')}
+        <div className="relative w-[100px] h-[60px] cursor-pointer">
+          <a 
+            href={row.original.imageUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
           >
-            <Download className="h-4 w-4" />
-          </Button>
+            <Image
+              src={'/'+row.original.imageUrl}
+              alt="Preview"
+              fill
+              className="object-cover rounded-md hover:opacity-80 transition-opacity"
+              sizes="100px"
+            />
+          </a>
         </div>
+      )
+    },
+  },
+  {
+    id: "actions",
+    header: "Действия",
+    cell: ({ row }) => {
+      const { toast } = useToast()
+
+      const handleDelete = async () => {
+        const result = await deleteCachedImage(row.original.id)
+        if (result.success) {
+          toast({
+            title: "Кэш удален",
+            description: "Кэшированное изображение успешно удалено",
+          })
+          window.location.reload()
+        } else {
+          toast({
+            title: "Ошибка",
+            description: result.error || "Не удалось удалить кэш",
+            variant: "destructive",
+          })
+        }
+      }
+
+      return (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-destructive hover:text-destructive/90"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Подтвердите удаление</DialogTitle>
+              <DialogDescription>
+                Вы уверены, что хотите удалить это кэшированное изображение? 
+                Это действие нельзя отменить.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <DialogClose asChild>
+                <Button variant="outline">Отмена</Button>
+              </DialogClose>
+              <Button 
+                variant="destructive" 
+                onClick={handleDelete}
+              >
+                Удалить
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )
     },
   },
