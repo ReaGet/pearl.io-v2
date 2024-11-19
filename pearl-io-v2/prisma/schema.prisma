@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String         @db.VarChar(255)
+  url           String         @db.VarChar(512)
+  favicon       String?        @db.VarChar(512)
+  cacheDuration Int
+  createdAt     DateTime       @default(now()) @map("created_at")
+  routes        Route[]
+  cachedImages  CachedImage[]
+  ImageRequest  ImageRequest[]
+
+  @@map("projects")
+}
+
+model Route {
+  id            String         @id @default(uuid()) @db.Uuid
+  projectId     String         @map("project_id") @db.Uuid
+  path          String         @db.VarChar(512)
+  returnType    String         @map("return_type") @db.VarChar(50)
+  cacheDuration Int            @map("cache_duration")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  cachedImages  CachedImage[]
+  ImageRequest  ImageRequest[]
+
+  @@unique([projectId, path], name: "project_path")
+  @@map("routes")
+}
+
+model CachedImage {
+  id          String   @id @default(uuid()) @db.Uuid
+  url         String   @db.VarChar(512)
+  projectId   String   @map("project_id") @db.Uuid
+  routeId     String   @map("route_id") @db.Uuid
+  storagePath String   @map("storage_path") @db.VarChar(512)
+  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt   DateTime @map("expires_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  route       Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([url, projectId, routeId], name: "url_projectId_routeId")
+  @@map("cached_images")
+}
+
+model ImageRequest {
+  id          String   @id @default(uuid()) @db.Uuid
+  url         String   @db.VarChar(512)
+  projectId   String   @map("project_id") @db.Uuid
+  routeId     String   @map("route_id") @db.Uuid
+  requestedAt DateTime @default(now()) @map("requested_at")
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  route       Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([requestedAt])
+  @@index([projectId])
+  @@index([routeId])
+  @@map("image_requests")
+}

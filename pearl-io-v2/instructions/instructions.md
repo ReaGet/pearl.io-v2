@@ -85,48 +85,86 @@ The purpose of this project is to create a web application for generating Open G
 
 ### Project Directory
 peral-io-v2
+├── components.json
+├── instructions
+│   └── instructions.md
+├── next.config.ts
+├── next-env.d.ts
+├── package.json
+├── package-lock.json
+├── postcss.config.mjs
+├── public
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── README.md
 ├── src
 │   ├── app
-│   │   ├── layout.tsx                # Root layout
-│   │   ├── page.tsx                  # Home page
-│   │   └── projects                  # Projects module
-│   │       ├── page.tsx              # Projects list page
-│   │       └── [projectId]           # Dynamic routing for project details
-│   │           ├── layout.tsx        # Layout for a single project
-│   │           ├── page.tsx          # Overview tab
-│   │           ├── analytics.tsx     # Analytics tab
-│   │           └── settings.tsx      # Settings tab
-│   ├── components                    # Reusable components
-│   │   ├── Card.tsx                  # Component for displaying project cards
-│   │   ├── Modal.tsx                 # Reusable modal component
-│   │   ├── Table.tsx                 # Table component with pagination
-│   │   └── Sidebar.tsx               # Sidebar with navigation tabs
-│   ├── hooks                         # Custom hooks
-│   │   └── useFetch.ts               # Hook for data fetching
-│   ├── lib                           # Utilities and logic
-│   │   ├── api.ts                    # API calls (e.g., fetching projects)
-│   │   ├── puppeteer.ts              # Puppeteer screenshot utility
-│   │   ├── cheerio.ts                # Cheerio page parsing utility
-│   │   └── canvas.ts                 # Canvas utilities for image generation
-│   ├── styles                        # CSS or Tailwind overrides
-│   │   └── globals.css               # Global styles
-│   └── types                         # TypeScript types
-│       ├── project.ts                # Types for project-related data
-│       └── api.ts                    # Types for API responses
-├── public                            # Public assets
-│   ├── images                        # Default static images
-│   │   ├── favicon.png
-│   │   └── placeholder.png
-│   ├── file.svg
-│   └── ...
-├── instructions                      # Documentation
-│   └── instructions.md               # Instructions or detailed notes
-├── next.config.ts                    # Next.js configuration
-├── tailwind.config.ts                # Tailwind CSS configuration
-├── tsconfig.json                     # TypeScript configuration
-├── package.json                      # Dependencies
-├── README.md                         # Project documentation
-└── .env.local                        # Local environment variables
+│   │   ├── api
+│   │   │   ├── cache
+│   │   │   └── og
+│   │   ├── favicon.ico
+│   │   ├── fonts
+│   │   │   ├── GeistMonoVF.woff
+│   │   │   └── GeistVF.woff
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── projects
+│   │       └── [projectId]
+│   ├── components
+│   │   ├── AddProjectModal.tsx
+│   │   ├── DashboardStats.tsx
+│   │   ├── DataTable.tsx
+│   │   ├── ProjectCard.tsx
+│   │   ├── ProjectSearch.tsx
+│   │   └── ui
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── dialog.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── pagination.tsx
+│   │       ├── popover.tsx
+│   │       ├── select.tsx
+│   │       ├── separator.tsx
+│   │       ├── sheet.tsx
+│   │       ├── sidebar.tsx
+│   │       ├── skeleton.tsx
+│   │       ├── switch.tsx
+│   │       ├── table.tsx
+│   │       ├── tabs.tsx
+│   │       ├── textarea.tsx
+│   │       ├── toaster.tsx
+│   │       ├── toast.tsx
+│   │       ├── toggle.tsx
+│   │       └── tooltip.tsx
+│   ├── hooks
+│   │   ├── use-mobile.tsx
+│   │   └── use-toast.ts
+│   ├── lib
+│   │   ├── api.ts
+│   │   ├── cache
+│   │   │   ├── cleanup.ts
+│   │   │   ├── index.ts
+│   │   │   ├── scheduler.ts
+│   │   │   └── types.ts
+│   │   ├── cache.ts
+│   │   ├── imageGenerators
+│   │   │   ├── generated.ts
+│   │   │   └── screenshot.ts
+│   │   ├── metadata.ts
+│   │   ├── routes.ts
+│   │   └── utils.ts
+│   └── types
+│       ├── image.ts
+│       ├── project.ts
+│       └── route.ts
+├── tailwind.config.ts
+└── tsconfig.json
 
 ---
 

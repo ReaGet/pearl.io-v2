@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { fetchProjectRoutes, createRoute, updateRoute, deleteRoute } from '@/lib/api'
+import { fetchProjectRoutes } from '@/lib/api'
 import { DataTable } from '@/components/DataTable'
 import { columns } from './columns'
 import { Button } from '@/components/ui/button'
@@ -14,19 +14,36 @@ export default function ProjectSettings() {
   const params = useParams()
   const [routes, setRoutes] = useState<Route[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const loadRoutes = async () => {
+    if (!params.projectId) return
+
     try {
+      setLoading(true)
+      setError(null)
       const data = await fetchProjectRoutes(params.projectId as string)
       setRoutes(data)
     } catch (error) {
       console.error('Ошибка при загрузке маршрутов:', error)
+      setError('Не удалось загрузить маршруты')
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
     loadRoutes()
   }, [params.projectId])
+
+  if (loading) {
+    return <div>Загрузка...</div>
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>
+  }
 
   return (
     <div className="space-y-8">
@@ -39,7 +56,13 @@ export default function ProjectSettings() {
       </div>
 
       <div className="rounded-md border">
-        <DataTable columns={columns} data={routes} />
+        <DataTable 
+          columns={columns} 
+          data={routes}
+          meta={{
+            reloadData: loadRoutes
+          }}
+        />
       </div>
 
       <AddRouteModal

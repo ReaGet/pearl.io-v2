@@ -1,5 +1,7 @@
 import { Project } from '@/types/project'
 import { ImageReturnType, Route } from '@/types/route';
+import { ProjectDetails } from '@/types/project';
+import { ProjectAnalytics } from '@/types/analytics';
 
 export async function fetchProjects(): Promise<Project[]> {
   const response = await fetch('/api/projects')
@@ -33,7 +35,7 @@ export async function fetchDashboardStats() {
   return response.json()
 }
 
-export async function fetchProjectDetails(projectId: string) {
+export async function fetchProjectDetails(projectId: string): Promise<ProjectDetails> {
   const response = await fetch(`/api/projects/${projectId}`)
   if (!response.ok) {
     throw new Error('Ошибка при загрузке деталей проекта')
@@ -41,7 +43,7 @@ export async function fetchProjectDetails(projectId: string) {
   return response.json()
 }
 
-export async function fetchProjectAnalytics(projectId: string) {
+export async function fetchProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
   const response = await fetch(`/api/projects/${projectId}/analytics`)
   if (!response.ok) {
     throw new Error('Ошибка при загрузке аналитики')
@@ -49,11 +51,15 @@ export async function fetchProjectAnalytics(projectId: string) {
   return response.json()
 }
 
-export async function fetchProjectRoutes(projectId: string) {
-  const response = await fetch(`/api/projects/${projectId}/routes`)
+export async function fetchProjectRoutes(projectId: string): Promise<Route[]> {
+  const response = await fetch(`/api/projects/${projectId}/routes`, {
+    cache: 'no-store'
+  })
+  
   if (!response.ok) {
     throw new Error('Ошибка при загрузке маршрутов')
   }
+  
   return response.json()
 }
 
@@ -61,7 +67,7 @@ export async function createRoute(projectId: string, data: {
   path: string
   returnType: ImageReturnType
   cacheDuration: number
-}) {
+}): Promise<Route> {
   const response = await fetch(`/api/projects/${projectId}/routes`, {
     method: 'POST',
     headers: {
@@ -71,13 +77,24 @@ export async function createRoute(projectId: string, data: {
   })
   
   if (!response.ok) {
+    if (response.status === 409) {
+      throw new Error('Маршрут с таким путем уже существует в этом проекте')
+    }
     throw new Error('Ошибка при создании маршрута')
   }
   
   return response.json()
 }
 
-export async function updateRoute(projectId: string, routeId: string, data: Partial<Route>) {
+export async function updateRoute(
+  projectId: string, 
+  routeId: string, 
+  data: {
+    path: string
+    returnType: ImageReturnType
+    cacheDuration: number
+  }
+): Promise<Route> {
   const response = await fetch(`/api/projects/${projectId}/routes/${routeId}`, {
     method: 'PATCH',
     headers: {

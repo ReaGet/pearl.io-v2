@@ -18,7 +18,13 @@ class CacheManagerImpl implements CacheManager {
   async get(url: string): Promise<CachedImage | null> {
     try {
       const cached = await this.kv.get(this.getKey(url))
-      return cached ? JSON.parse(cached as string) : null
+      if (!cached) return null
+
+      if (typeof cached === 'string') {
+        return JSON.parse(cached)
+      }
+      
+      return cached as CachedImage
     } catch (error) {
       console.error('Error getting cached image:', error)
       return null
@@ -32,7 +38,7 @@ class CacheManagerImpl implements CacheManager {
         createdAt: new Date().toISOString(),
         config,
       }
-      await this.kv.set(this.getKey(url), JSON.stringify(data), {
+      await this.kv.set(this.getKey(url), data, {
         ex: config.cacheDuration,
       })
     } catch (error) {
@@ -55,7 +61,7 @@ class CacheManagerImpl implements CacheManager {
       const items = await Promise.all(
         keys.map(async (key) => {
           const data = await this.kv.get(key)
-          return JSON.parse(data as string) as CachedImage
+          return typeof data === 'string' ? JSON.parse(data) : data as CachedImage
         })
       )
 
@@ -95,7 +101,8 @@ class CacheManagerImpl implements CacheManager {
   }
 
   async getRawValue(key: string): Promise<any> {
-    return this.kv.get(key)
+    const data = await this.kv.get(key)
+    return typeof data === 'string' ? JSON.parse(data) : data
   }
 
   async deleteKey(key: string): Promise<void> {

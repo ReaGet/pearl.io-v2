@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { createRoute } from '@/lib/api'
-import { ImageReturnType } from '@/types/route'
+import { updateRoute } from '@/lib/api'
+import { ImageReturnType, Route } from '@/types/route'
 import {
   Dialog,
   DialogContent,
@@ -19,17 +19,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-interface AddRouteModalProps {
-  projectId: string
+interface EditRouteModalProps {
+  route: Route
   isOpen: boolean
   onClose: () => void
-  onRouteAdded: () => void
+  onRouteUpdated: () => void
 }
 
-export function AddRouteModal({ projectId, isOpen, onClose, onRouteAdded }: AddRouteModalProps) {
-  const [path, setPath] = useState('')
-  const [returnType, setReturnType] = useState<ImageReturnType>('screenshot')
-  const [cacheDuration, setCacheDuration] = useState('3600')
+export function EditRouteModal({ route, isOpen, onClose, onRouteUpdated }: EditRouteModalProps) {
+  const [path, setPath] = useState(route.path)
+  const [returnType, setReturnType] = useState<ImageReturnType>(route.returnType)
+  const [cacheDuration, setCacheDuration] = useState(route.cacheDuration.toString())
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -39,36 +39,17 @@ export function AddRouteModal({ projectId, isOpen, onClose, onRouteAdded }: AddR
       setLoading(true)
       setError(null)
       
-      const response = await fetch(`/api/projects/${projectId}/routes`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          path,
-          returnType,
-          cacheDuration: parseInt(cacheDuration)
-        }),
+      await updateRoute(route.projectId, route.id, {
+        path,
+        returnType,
+        cacheDuration: parseInt(cacheDuration)
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        if (response.status === 409) {
-          throw new Error(data.error || 'Маршрут с таким путем уже существует')
-        }
-        throw new Error('Ошибка при создании маршрута')
-      }
-
-      onRouteAdded()
+      onRouteUpdated()
       onClose()
-      
-      // Сброс формы
-      setPath('')
-      setReturnType('screenshot')
-      setCacheDuration('3600')
     } catch (error) {
-      console.error('Ошибка при создании маршрута:', error)
-      setError(error instanceof Error ? error.message : 'Не удалось создать маршрут')
+      console.error('Ошибка при обновлении маршрута:', error)
+      setError('Не удалось обновить маршрут')
     } finally {
       setLoading(false)
     }
@@ -78,7 +59,7 @@ export function AddRouteModal({ projectId, isOpen, onClose, onRouteAdded }: AddR
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Добавить новый маршрут</DialogTitle>
+          <DialogTitle>Редактировать маршрут</DialogTitle>
         </DialogHeader>
         
         {error && (
@@ -149,7 +130,7 @@ export function AddRouteModal({ projectId, isOpen, onClose, onRouteAdded }: AddR
               Отмена
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Создание...' : 'Создать'}
+              {loading ? 'Сохранение...' : 'Сохранить'}
             </Button>
           </div>
         </form>

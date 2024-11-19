@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateScreenshot } from '@/lib/imageGenerators/screenshot'
 import { getRouteConfig } from '@/lib/routes'
 import { cacheManager } from '@/lib/cache/index'
+import { prisma } from '@/lib/db/prisma'
 import { readFile } from 'fs/promises'
 
 export async function GET(request: NextRequest) {
@@ -16,44 +17,113 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Route not configured', { status: 404 })
     }
 
-    const cachedImage = await cacheManager.get(url)
-    if (cachedImage && !(cacheManager as any).isExpired(cachedImage)) {
-      const buffer = Buffer.from(cachedImage.buffer, 'base64')
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'image/jpeg',
-          'Cache-Control': 'public, max-age=31536000',
-        },
-      })
-    }
-
-    let buffer: Buffer
-    switch (routeConfig.returnType) {
-      case 'screenshot':
-        buffer = await generateScreenshot({ url })
-        break
-      case 'static':
-        if (!routeConfig.staticImagePath) {
-          return new NextResponse('Static image path is required', { status: 400 })
-        }
-        buffer = await readFile(routeConfig.staticImagePath)
-        break
-      default:
-        return new NextResponse('Invalid return type', { status: 400 })
-    }
-
-    await cacheManager.set(url, buffer, {
-      cacheDuration: routeConfig.cacheDuration,
+    // Track the request
+    await prisma.imageRequest.create({
+      data: {
+        url,
+        projectId: routeConfig.projectId,
+        routeId: routeConfig.routeId,
+      }
     })
 
-    return new NextResponse(buffer, {
+    const cachedImageRecord = await prisma.cachedImage.findFirst({
+      where: {
+        url,
+        expiresAt: {
+          gt: new Date()
+        }
+      }
+    })
+
+    if (cachedImageRecord) {
+      try {
+        const cachedImage = await cacheManager.get(url)
+        if (cachedImage && cachedImage.buffer) {
+          const buffer = Buffer.from(cachedImage.buffer, 'base64')
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'Cache-Control': 'public, max-age=31536000',
+            },
+          })
+        }
+      } catch (cacheError) {
+        console.error('Error retrieving from cache:', cacheError)
+      }
+    }
+
+    let imageBuffer: Buffer
+    try {
+      switch (routeConfig.returnType) {
+        case 'screenshot':
+          try {
+            imageBuffer = await generateScreenshot({ url })
+            if (!imageBuffer || !(imageBuffer instanceof Buffer)) {
+              console.error('Invalid screenshot result:', imageBuffer)
+              throw new Error('Invalid screenshot format')
+            }
+          } catch (screenshotError) {
+            console.error('Screenshot generation failed:', screenshotError)
+            throw new Error('Failed to generate screenshot')
+          }
+          break
+        case 'static':
+          if (!routeConfig.staticImagePath) {
+            return new NextResponse('Static image path is required', { status: 400 })
+          }
+          try {
+            imageBuffer = await readFile(routeConfig.staticImagePath)
+          } catch (fileError) {
+            console.error('Static file read failed:', fileError)
+            throw new Error('Failed to read static image')
+          }
+          break
+        default:
+          return new NextResponse('Invalid return type', { status: 400 })
+      }
+    } catch (generationError) {
+      console.error('Error generating image:', generationError)
+      return new NextResponse('Error generating image', { status: 500 })
+    }
+
+    try {
+      await cacheManager.set(url, imageBuffer, {
+        cacheDuration: routeConfig.cacheDuration,
+      })
+
+      const expiresAt = new Date(Date.now() + routeConfig.cacheDuration * 1000)
+      
+      await prisma.cachedImage.upsert({
+        where: {
+          url_projectId_routeId: {
+            url,
+            projectId: routeConfig.projectId,
+            routeId: routeConfig.routeId,
+          }
+        },
+        update: {
+          expiresAt,
+        },
+        create: {
+          url,
+          projectId: routeConfig.projectId,
+          routeId: routeConfig.routeId,
+          storagePath: `${routeConfig.projectId}/${routeConfig.routeId}/${Date.now()}.jpg`,
+          expiresAt,
+        }
+      })
+    } catch (saveError) {
+      console.error('Error saving to cache:', saveError)
+    }
+
+    return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': 'image/jpeg',
         'Cache-Control': 'public, max-age=31536000',
       },
     })
   } catch (error) {
-    console.error('Error generating image:', error)
+    console.error('Error in OG image generation:', error)
     return new NextResponse('Internal Server Error', { status: 500 })
   }
 } 
