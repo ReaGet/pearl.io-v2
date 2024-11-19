@@ -1,136 +1,168 @@
-# Project overview
-You are building web application that allow to generate open-graph images on fly and than cache them or returns static image for giving url.
+# Project Requirements Document (PRD)
 
-You will be using NextJs, shadcn, tailwindcss, Lucid icon
+## Project Overview
 
-# Core functionalities
-1. See all project which user works with. Each project - individual website
-  1. Users can see all their projects. Each project has favicon image, title, and cached images count value
-  2. Users can click add project button, which open a modal for users to paste in any website url, choose cache duration value and add
-  3. After user added a new project, a new card should be added. All information should be parsed from giving url
-  4. Clicking on each project, should goes to the specific project page
-2. Project page, where user can see analytics for these project.
-  1. Project page should have sidebar with tabs: "Overview", "Analytics", "Settings"
-  2. Fetch data for current project in "Overview".
-    1. In the top we want to see how many images we generated out of some limit value
-    2. Display table component. Each row should have this information: url, created_at, generated image for giving url. Table should have pagination
-  3. Fetch analytics data for current project in "Analytics".
-    1. Display most shared url for current project
-    2. Project statistics page, where user can see for which routes images where generated and also can see the most sharing route or page
-  4. Ability to set rules for any route of website.
-    - Choose type of returnig image: screenshot of the page; static image, which user uploaded from his device; generated image matching created template with information from the givin route
-    - Caching duration with ability of clearing image with expired cache
-  5. Fetch all routes in "Settings" tab.
-    1. Display table component with all setup routes.
-    2. Each route should have this information: route, created_at, returning image type. edit button that opens modal where we can edit settings and clear cache for giving route.
-    2. Users can click add route button, which open a modal for users to setup route.
-      1. User can set route relative to origin of current project's url. User can set one of the types of returing images for giving route, cache duration.
-      2. If user choose static image for giving route, we should show image uploading zone. These image will return for giving route.
-    3. After user added a new route, a new route should be added.
-4. API route that take url and delay params
-  1. API should check if there is any rules for giving url in database. Url's origin should be matched with any url origin in project from database
-  2. If there is project with giving url in database, check if there is any rule for giving route in url.
-  3. If no, we apply same rules as for origin of url
-  4. If there is rules for giving url we apply this rules to url. We should check cached duration value if needed and if cached is expired we should remove image and regenerate it if needed  
-  3. Use Puppeteer library if settings for giving route is 'make screenshot'
-  4. Use Cheerio to parse page if settings for giving route is 'generate image' and use canvas to generate and return image with parsed data
-8. Each user has the limit of generated images
+The purpose of this project is to create a web application for generating Open Graph (OG) images dynamically based on given URLs. The application will cache generated images or return static images based on specific rules configured by the user. The tool is designed to provide customizable, efficient, and scalable OG image generation for website owners.
 
-# Doc **
-## Documentation of how to use puppeteer to take screenshot
-CODE EXAMPLE:
-```
-import puppeteer from 'puppeteer';
+---
 
-export async function takeScreenshot(url: string): Promise<Buffer> {
-  try {
-    // Запускаем браузер
-    const browser = await puppeteer.launch({
-      headless: true, // Используем headless режим
-    });
+## Features and Functionalities
 
-    // Создаем новую страницу
-    const page = await browser.newPage();
-    
-    // Устанавливаем viewport
-    await page.setViewport({
-      width: 1200,
-      height: 630, // Стандартный размер для open-graph изображений
-    });
+### 1. **Dashboard**
+- **Purpose**: Provide an overview of user projects.
+- **Details**:
+  - Display all user projects.
+  - Each project includes:
+    - Favicon
+    - Title
+    - Cached images count
+  - **Functionalities**:
+    1. **Add New Project**:
+       - Users can paste a website URL, select cache duration, and create a new project.
+       - Metadata (title, favicon) is parsed from the URL.
+       - A new project card is added to the dashboard.
+    2. **Project Navigation**:
+       - Clicking a project redirects to its **Project Details Page**.
 
-    // Переходим по URL
-    await page.goto(url, {
-      waitUntil: 'networkidle0', // Ждем, пока сеть станет неактивной
-      timeout: 10000, // Таймаут 10 секунд
-    });
+---
 
-    // Делаем скриншот
-    const screenshot = await page.screenshot({
-      type: 'png',
-      fullPage: false,
-    });
+### 2. **Project Details Page**
+- **Purpose**: Manage specific project settings, analytics, and routes.
+- **Tabs**:
+  1. **Overview**:
+     - Displays:
+       - Total images generated vs. user limit.
+       - Paginated table with:
+         - URL
+         - Created date (`created_at`)
+         - Generated image (with download option)
+  2. **Analytics**:
+     - Shows:
+       - Most shared URL.
+       - Route-level statistics, including image generation counts.
+  3. **Settings**:
+     - Displays a list of routes with:
+       - Route path
+       - Created date
+       - Image return type (screenshot, static, or generated)
+     - **Functionalities**:
+       - **Add Route**:
+         - Configure route path relative to the project URL.
+         - Select image return type:
+           - **Screenshot**: Dynamically capture the page.
+           - **Static**: Upload and return a static image.
+           - **Generated**: Use a template with parsed metadata.
+         - Set cache duration.
+       - **Edit Route**:
+         - Modify route configurations or clear cache.
 
-    // Закрываем браузер
-    await browser.close();
+---
 
-    return Buffer.from(screenshot);
-  } catch (error) {
-    console.error('Ошибка при создании скриншота:', error);
-    throw error;
-  }
-}
+### 3. **Image Generation API**
+- **Purpose**: Dynamically generate OG images for URLs.
+- **Workflow**:
+  1. Validate the provided URL against user-defined rules.
+  2. Apply appropriate logic based on the return type:
+     - **Screenshot**: Use Puppeteer to capture a page image.
+     - **Static**: Serve the uploaded static image.
+     - **Generated**: Parse page metadata using Cheerio and create an image using Canvas.
+  3. Implement caching to optimize performance:
+     - Validate cache expiry.
+     - Regenerate images if cache is invalid.
 
-// Пример использования:
-// const screenshot = await takeScreenshot('https://example.com');
-```
-## Documentation of how to use cheerio to parse page
-```
-import * as cheerio from 'cheerio';
-import axios from 'axios';
-import { URL } from 'url';
+---
 
-interface PageMetadata {
-  origin: string;
-  title: string;
-  favicon: string;
-}
+### 4. **Caching System**
+- **Purpose**: Efficiently store and retrieve OG images.
+- **Details**:
+  - Cache duration is user-configurable.
+  - Automatically clear expired cache entries.
+  - Regenerate images on demand.
 
-async function parseWebPage(url: string): Promise<PageMetadata> {
-  try {
-    // Получаем HTML страницы
-    const response = await axios.get(url);
-    const html = response.data;
-    const $ = cheerio.load(html);
-    
-    // Получаем origin из URL
-    const urlObject = new URL(url);
-    const origin = urlObject.origin;
+---
 
-    // Получаем title
-    const title = $('title').text() || $('meta[property="og:title"]').attr('content') || '';
+## File Structure
 
-    // Получаем favicon
-    let favicon = $('link[rel="icon"]').attr('href') || 
-                 $('link[rel="shortcut icon"]').attr('href') || 
-                 '/favicon.ico';
+### Project Directory
+peral-io-v2
+├── src
+│   ├── app
+│   │   ├── layout.tsx                # Root layout
+│   │   ├── page.tsx                  # Home page
+│   │   └── projects                  # Projects module
+│   │       ├── page.tsx              # Projects list page
+│   │       └── [projectId]           # Dynamic routing for project details
+│   │           ├── layout.tsx        # Layout for a single project
+│   │           ├── page.tsx          # Overview tab
+│   │           ├── analytics.tsx     # Analytics tab
+│   │           └── settings.tsx      # Settings tab
+│   ├── components                    # Reusable components
+│   │   ├── Card.tsx                  # Component for displaying project cards
+│   │   ├── Modal.tsx                 # Reusable modal component
+│   │   ├── Table.tsx                 # Table component with pagination
+│   │   └── Sidebar.tsx               # Sidebar with navigation tabs
+│   ├── hooks                         # Custom hooks
+│   │   └── useFetch.ts               # Hook for data fetching
+│   ├── lib                           # Utilities and logic
+│   │   ├── api.ts                    # API calls (e.g., fetching projects)
+│   │   ├── puppeteer.ts              # Puppeteer screenshot utility
+│   │   ├── cheerio.ts                # Cheerio page parsing utility
+│   │   └── canvas.ts                 # Canvas utilities for image generation
+│   ├── styles                        # CSS or Tailwind overrides
+│   │   └── globals.css               # Global styles
+│   └── types                         # TypeScript types
+│       ├── project.ts                # Types for project-related data
+│       └── api.ts                    # Types for API responses
+├── public                            # Public assets
+│   ├── images                        # Default static images
+│   │   ├── favicon.png
+│   │   └── placeholder.png
+│   ├── file.svg
+│   └── ...
+├── instructions                      # Documentation
+│   └── instructions.md               # Instructions or detailed notes
+├── next.config.ts                    # Next.js configuration
+├── tailwind.config.ts                # Tailwind CSS configuration
+├── tsconfig.json                     # TypeScript configuration
+├── package.json                      # Dependencies
+├── README.md                         # Project documentation
+└── .env.local                        # Local environment variables
 
-    // Если favicon относительный путь, делаем его абсолютным
-    if (favicon && !favicon.startsWith('http')) {
-      favicon = new URL(favicon, origin).href;
-    }
+---
 
-    return {
-      origin,
-      title,
-      favicon
-    };
-  } catch (error) {
-    console.error('Ошибка при парсинге страницы:', error);
-    throw error;
-  }
-}
+### **Canvas for Image Generation**
+- **Description**: Canvas will be used to dynamically generate OG images based on parsed metadata and user-defined templates.
+- **Notes**:
+  - Ensure the library supports required fonts and styling.
+  - Optimize rendering for fast performance.
 
-export { parseWebPage, type PageMetadata };
-```
+---
 
-# Current file structure
+### **Development Guidelines**
+- **Error Handling**: Implement robust error handling for Puppeteer and Cheerio operations.
+- **Caching**: Validate cache entries and automatically remove expired data.
+- **API Performance**: Optimize endpoints for minimal latency and scalability.
+- **Security**: Sanitize all user inputs to prevent injection attacks.
+
+---
+
+### 4. **Milestones**
+- **Purpose**: Efficiently store and retrieve OG images.
+- **Details**:
+  - Cache duration is user-configurable.
+  - Automatically clear expired cache entries.
+  - Regenerate images on demand.
+
+
+---
+
+### 4. **Caching System**
+1. Set up project scaffolding and environment configurations.
+2. Implement the dashboard with project listing and addition.
+3. Develop project details functionality:
+  - Overview
+  - Analytics
+  - Settings
+4. Build the image generation API with caching support.
+5. Integrate Puppeteer, Cheerio, and Canvas for route-specific logic.
+6. Conduct end-to-end testing.
