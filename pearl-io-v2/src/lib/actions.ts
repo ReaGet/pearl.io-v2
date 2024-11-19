@@ -12,7 +12,7 @@ export async function getProjectDetails(projectId: string) {
     include: {
       _count: {
         select: {
-          ImageRequest: true
+          cachedImages: true
         }
       },
       cachedImages: {
@@ -28,8 +28,8 @@ export async function getProjectDetails(projectId: string) {
   return {
     project: {
       ...project,
-      generatedImages: project._count.ImageRequest,
-      imageLimit: 1000, // Можно вынести в конфиг
+      generatedImages: project._count.cachedImages,
+      imageLimit: 1000,
     },
     images: project.cachedImages.map(image => ({
       id: image.id,

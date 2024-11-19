@@ -11,6 +11,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 import { deleteRoute } from "@/lib/api"
 import { EditRouteModal } from "./EditRouteModal"
 
@@ -62,18 +71,18 @@ export const columns: ColumnDef<Route, TableMeta>[] = [
     cell: ({ row, table }) => {
       const route = row.original
       const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
       
       const handleDelete = async () => {
-        if (confirm('Вы уверены, что хотите удалить этот маршрут?')) {
-          try {
-            await deleteRoute(route.projectId, route.id)
-            // Обновить список маршрутов через родительский компонент
-            if (table.options.meta?.reloadData) {
-              table.options.meta.reloadData()
-            }
-          } catch (error) {
-            console.error('Ошибка при удалении маршрута:', error)
+        try {
+          await deleteRoute(route.projectId, route.id)
+          setIsDeleteDialogOpen(false)
+          // Обновить список маршрутов через родительский компонент
+          if (table.options.meta?.reloadData) {
+            table.options.meta.reloadData()
           }
+        } catch (error) {
+          console.error('Ошибка при удалении маршрута:', error)
         }
       }
 
@@ -90,12 +99,38 @@ export const columns: ColumnDef<Route, TableMeta>[] = [
                 <Edit className="mr-2 h-4 w-4" />
                 Редактировать
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+              <DropdownMenuItem 
+                onClick={() => setIsDeleteDialogOpen(true)} 
+                className="text-red-600"
+              >
                 <Trash className="mr-2 h-4 w-4" />
                 Удалить
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Подтвердите удаление</DialogTitle>
+                <DialogDescription>
+                  Вы уверены, что хотите удалить этот маршрут? 
+                  Это действие нельзя отменить, и все связанные кэшированные изображения будут удалены.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:gap-0">
+                <DialogClose asChild>
+                  <Button variant="outline">Отмена</Button>
+                </DialogClose>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDelete}
+                >
+                  Удалить
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <EditRouteModal
             route={route}
