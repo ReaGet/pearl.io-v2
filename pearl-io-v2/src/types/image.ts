@@ -17,4 +17,9 @@ export interface ImageResponse {
     description: string
     image?: string
   }
-} 
+}
+
+export type ImageReturnType = {
+  url: string;
+  // ... добавьте другие необходимые поля
+}; 

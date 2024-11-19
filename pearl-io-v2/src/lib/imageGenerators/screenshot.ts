@@ -24,6 +24,12 @@ export async function generateScreenshot({ url, width = 1200, height = 630 }: Im
 
     // Ждем немного для полной загрузки контента
     await new Promise(resolve => setTimeout(resolve, 1000))
+
+    await page.setViewport({
+      width: 1500, // default: 800
+      height: 1000, // default: 600
+      deviceScaleFactor: 1, // default: 1
+    })
     
     const screenshot = await page.screenshot({
       type: 'jpeg',

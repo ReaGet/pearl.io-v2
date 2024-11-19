@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Route } from "@/types/route"
+import { Route } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Trash, Edit } from "lucide-react"
 import {
