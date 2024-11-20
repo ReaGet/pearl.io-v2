@@ -45,7 +45,25 @@ export const columns: ColumnDef<Image>[] = [
     accessorKey: "createdAt",
     header: "Дата создания",
     cell: ({ row }) => {
-      return new Date(row.original.createdAt).toLocaleDateString('ru-RU')
+      const date = new Date(row.original.createdAt)
+      return (
+        <div>
+          <div className="text-sm">
+            {date.toLocaleDateString('ru-RU', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {date.toLocaleTimeString('ru-RU', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          </div>
+        </div>
+      )
     },
   },
   {

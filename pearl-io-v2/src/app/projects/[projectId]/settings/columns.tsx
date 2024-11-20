@@ -42,7 +42,7 @@ export const columns: ColumnDef<RouteWithMeta>[] = [
     accessorKey: "returnType",
     header: "Тип изображения",
     cell: ({ row }) => {
-      const types = {
+      const types: Record<ImageReturnType, string> = {
         screenshot: "Скриншот",
         static: "Статическое",
         generated: "Сгенерированное"
@@ -65,11 +65,25 @@ export const columns: ColumnDef<RouteWithMeta>[] = [
     accessorKey: "createdAt",
     header: "Создан",
     cell: ({ row }) => {
-      return new Date(row.original.createdAt).toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      })
+      const date = new Date(row.original.createdAt)
+      return (
+        <div>
+          <div className="text-sm">
+            {date.toLocaleDateString('ru-RU', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {date.toLocaleTimeString('ru-RU', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          </div>
+        </div>
+      )
     }
   },
   {
@@ -139,7 +153,10 @@ export const columns: ColumnDef<RouteWithMeta>[] = [
           </Dialog>
 
           <EditRouteModal
-            route={route}
+            route={{
+              ...route,
+              createdAt: route.createdAt.toISOString()
+            }}
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
             onRouteUpdated={async () => {
