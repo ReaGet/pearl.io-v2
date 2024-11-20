@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
 import { Prisma } from '@prisma/client'
+import { normalizePath } from '@/lib/utils/url'
 
 export async function GET(
   request: NextRequest,
@@ -33,30 +34,27 @@ export async function POST(
 
   try {
     const { path, returnType, cacheDuration } = await request.json()
+    
+    const normalizedPath = normalizePath(path)
 
     const existingRoute = await prisma.route.findFirst({
       where: {
         projectId,
-        path
+        path: normalizedPath
       }
     })
 
     if (existingRoute) {
       return new NextResponse(
         JSON.stringify({ error: 'Маршрут с таким путем уже существует' }), 
-        { 
-          status: 409,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
+        { status: 409 }
       )
     }
 
     const route = await prisma.route.create({
       data: {
         projectId,
-        path,
+        path: normalizedPath,
         returnType,
         cacheDuration
       }
@@ -69,12 +67,7 @@ export async function POST(
       if (error.code === 'P2002') {
         return new NextResponse(
           JSON.stringify({ error: 'Маршрут с таким путем уже существует' }), 
-          { 
-            status: 409,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
+          { status: 409 }
         )
       }
     }

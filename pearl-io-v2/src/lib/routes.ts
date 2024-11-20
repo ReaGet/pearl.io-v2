@@ -1,14 +1,10 @@
 import { prisma } from '@/lib/db/prisma'
-import { Route } from '@prisma/client'
+import { normalizeUrl } from './utils/url'
 
 export async function getRouteConfig(url: string) {
   try {
-    // Нормализация URL
-    const urlObject = new URL(url)
-    const pathname = urlObject.pathname
-    const normalizedPathname = pathname.endsWith('/') ? pathname : `${pathname}/`
-    const normalizedUrl = `${urlObject.origin}${normalizedPathname}`
-
+    const normalizedUrl = normalizeUrl(url)
+    
     const routes = await prisma.route.findMany({
       include: {
         project: true,
@@ -17,13 +13,11 @@ export async function getRouteConfig(url: string) {
 
     for (const route of routes) {
       const pattern = new RegExp(route.path)
-      // Проверяем соответствие с нормализованным URL
       if (pattern.test(normalizedUrl)) {
         return {
           projectId: route.projectId,
           routeId: route.id,
           returnType: route.returnType,
-          // staticImagePath: route.staticImagePath,
           cacheDuration: route.cacheDuration,
         }
       }

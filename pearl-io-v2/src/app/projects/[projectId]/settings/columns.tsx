@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
-import { Route } from "@prisma/client"
+import { Route, ImageReturnType } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Trash, Edit } from "lucide-react"
 import {
@@ -23,11 +23,17 @@ import {
 import { deleteRoute } from "@/lib/api"
 import { EditRouteModal } from "./EditRouteModal"
 
-type TableMeta = {
-  reloadData: () => Promise<void>
+interface RouteWithMeta extends Route {
+  returnType: ImageReturnType;
 }
 
-export const columns: ColumnDef<Route, TableMeta>[] = [
+interface TableOptions {
+  meta?: {
+    reloadData: () => Promise<void>;
+  };
+}
+
+export const columns: ColumnDef<RouteWithMeta>[] = [
   {
     accessorKey: "path",
     header: "Путь",
@@ -41,7 +47,7 @@ export const columns: ColumnDef<Route, TableMeta>[] = [
         static: "Статическое",
         generated: "Сгенерированное"
       }
-      return types[row.original.returnType as keyof typeof types]
+      return types[row.original.returnType]
     }
   },
   {
@@ -77,9 +83,9 @@ export const columns: ColumnDef<Route, TableMeta>[] = [
         try {
           await deleteRoute(route.projectId, route.id)
           setIsDeleteDialogOpen(false)
-          // Обновить список маршрутов через родительский компонент
-          if (table.options.meta?.reloadData) {
-            table.options.meta.reloadData()
+          const options = table.options as TableOptions
+          if (options.meta?.reloadData) {
+            await options.meta.reloadData()
           }
         } catch (error) {
           console.error('Ошибка при удалении маршрута:', error)
@@ -136,9 +142,10 @@ export const columns: ColumnDef<Route, TableMeta>[] = [
             route={route}
             isOpen={isEditModalOpen}
             onClose={() => setIsEditModalOpen(false)}
-            onRouteUpdated={() => {
-              if (table.options.meta?.reloadData) {
-                table.options.meta.reloadData()
+            onRouteUpdated={async () => {
+              const options = table.options as TableOptions
+              if (options.meta?.reloadData) {
+                await options.meta.reloadData()
               }
             }}
           />

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db/prisma'
 import { Route } from '@prisma/client'
 import { cacheImage } from './cache'
+import { Project } from '@prisma/client'
 
 export async function getProjectDetails(projectId: string) {
   const project = await prisma.project.findUnique({
@@ -127,5 +128,86 @@ export async function deleteCachedImage(imageId: string) {
   } catch (error) {
     console.error('Error deleting cached image:', error)
     return { success: false, error: 'Failed to delete cached image' }
+  }
+}
+
+export async function getDashboardStats() {
+  try {
+    const [projects, imageRequests, cachedImages] = await Promise.all([
+      prisma.project.count(),
+      prisma.imageRequest.count(),
+      prisma.cachedImage.count()
+    ])
+
+    return {
+      totalProjects: projects,
+      totalImages: imageRequests,
+      totalCached: cachedImages
+    }
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error)
+    throw new Error('Failed to fetch dashboard stats')
+  }
+}
+
+export async function deleteProject(projectId: string) {
+  try {
+    // Удаляем все связанные данные
+    await prisma.$transaction(async (tx) => {
+      // Удаляем кэшированные изображения
+      await tx.cachedImage.deleteMany({
+        where: { projectId }
+      })
+
+      // Удаляем запросы изображений
+      await tx.imageRequest.deleteMany({
+        where: { projectId }
+      })
+
+      // Удаляем маршрут
+      await tx.route.deleteMany({
+        where: { projectId }
+      })
+
+      // Удаляем сам проект
+      await tx.project.delete({
+        where: { id: projectId }
+      })
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting project:', error)
+    return { success: false, error: 'Failed to delete project' }
+  }
+}
+
+export async function getProjects(): Promise<Project[]> {
+  try {
+    const projects = await prisma.project.findMany({
+      include: {
+        _count: {
+          select: {
+            cachedImages: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return projects.map(project => ({
+      id: project.id,
+      title: project.title,
+      url: project.url,
+      favicon: project.favicon,
+      createdAt: project.createdAt,
+      cacheDuration: project.cacheDuration,
+      cachedImagesCount: project._count.cachedImages
+    }))
+  } catch (error) {
+    console.error('Error fetching projects:', error)
+    return []
   }
 } 
